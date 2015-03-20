@@ -7,6 +7,7 @@ public class Board {
     private int[][] block;
     private int blank_i;
     private int blank_j;    
+    private Queue<Board> boardQueue;
     public Board(int[][] blocks)  
     {
        this.N = blocks.length;
@@ -27,6 +28,7 @@ public class Board {
                 }
             }
         }
+        boardQueue = new Queue<Board>();
     }
     // board dimension N
     public int dimension() 
@@ -99,6 +101,45 @@ public class Board {
         }
         return true;           
     }
+    private void buildNeighbourList() 
+    {
+        int[][] neighbourList = {
+            {1, 0},
+            {0, 1},
+            {0, -1},
+            {-1, 0}
+        };
+        int maxNeighbours = 4;
+        int[][] neighbourBoard = new int[N][N];  
+        int neighbourI = 0;
+        int neighbourJ = 0; 
+        for(int currNeighbour = maxNeighbours-1; currNeighbour >= 0; currNeighbour--) {
+            neighbourI = blank_i + neighbourList[currNeighbour][0];
+            neighbourJ = blank_j + neighbourList[currNeighbour][1];
+            //System.out.println("Neighbour I and J "+neighbourI+" and " +neighbourJ);
+            if ((neighbourI >= 0) && (neighbourI < N) &&
+                (neighbourJ >= 0) && (neighbourJ < N)) { 
+                copyBoard(block, neighbourBoard, N);
+                neighbourBoard[blank_i][blank_j] = neighbourBoard[neighbourI][neighbourJ];
+                neighbourBoard[neighbourI][neighbourJ] = 0;                    
+                boardQueue.enqueue(new Board(neighbourBoard));                   
+            }
+        }          
+    }
+    private static void copyBoard(int[][] from, int[][] to, int size)
+    {
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                to[i][j] = from[i][j];
+            }
+        }
+    }
+    public Iterable<Board> neighbors()
+    {
+        buildNeighbourList();      
+        return boardQueue;
+    } 
+    /*
     // all neighboring boards
     public Iterable<Board> neighbors()
     {
@@ -110,21 +151,12 @@ public class Board {
                 return new BoardIterator() ;
             }
         };        
-    }
-    private static void copyBoard(int[][] from, int[][] to, int size)
-    {
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                to[i][j] = from[i][j];
-            }
-        }
-    }
+    }    
     private class BoardIterator implements Iterator<Board> {
         private Board[] boardQueue = new Board[4];
         int numNeighbours = 0;
         public BoardIterator() 
         {
-            /*Init some values*/
             int[][] neighbourList = {
                 {1, 0},
                 {0, 1},
@@ -162,7 +194,7 @@ public class Board {
         {
             //Unsupported
         }        
-    }
+    }*/
     // string representation of this board (in the output format specified below)
     public String toString()   
     {
