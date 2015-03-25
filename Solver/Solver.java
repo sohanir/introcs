@@ -9,66 +9,53 @@ public class Solver {
     // find a solution to the initial board (using the A* algorithm)
     public Solver(Board initial)  
     {
-        Out out = new Out("test.txt");
-        Out out2 = new Out("test_twin.txt");
+//        Out out = new Out("test.txt");
         pq = new MinPQ<SearchNode>();
         pqTwin = new MinPQ<SearchNode>();
         //this.myBoard = initial;
-        SearchNode initGame = new SearchNode(initial, null);        
+        SearchNode initGame = new SearchNode(initial, null, false);        
         solutionStack = new Stack<Board>();
         pq.insert(initGame);
         //Board currBoard = initial;
         Board currBoardTwin = initial.twin();
-        SearchNode twinGame = new SearchNode(currBoardTwin, null);
-        pqTwin.insert(twinGame);        
+        SearchNode twinGame = new SearchNode(currBoardTwin, null, true);
+        pq.insert(twinGame);        
         while (!initialSolved && !twinSolved) {
             initGame = pq.delMin();
             Board currBoard = initGame.thisBoard();
-            out.println("Best neighbour");
-            out.print(currBoard.toString());
+//            out.println("Best neighbour");
+//            out.print(currBoard.toString());
             //System.out.print("Best neighbour:\n"+currBoard.toString());
                                
             if (currBoard.isGoal()) {
-                initialSolved = true;
-                numMoves = initGame.numMoves();
-                createSolutionStack(initGame);
+                if (initGame.isTwin()) {
+                    twinSolved = true;
+                    System.out.println("Twin solved at "+initGame.numMoves+" moves");
+                    numMoves = -1;
+                } else {
+                    initialSolved = true;
+                    numMoves = initGame.numMoves();
+                    createSolutionStack(initGame);                    
+                }
                 continue;
             } 
             //Solve original board
             Iterable<Board> neighbours = currBoard.neighbors();            
-            out.println("Add neighbours");
+//            out.println("Add neighbours");
             for (Board neighbour: neighbours) {
-                if (!seenBefore(initGame, neighbour)) {                    
-                    SearchNode newNode = new SearchNode(neighbour, initGame);
+                if (!seenBefore(initGame, neighbour)) {   
+                    SearchNode newNode;
+                    if (initGame.isTwin()) {
+                        newNode = new SearchNode(neighbour, initGame, true);
+                    } else {
+                        newNode = new SearchNode(neighbour, initGame, false);
+                    }
                     pq.insert(newNode);  
-                    out.println("Neighbour");
-                    out.print(neighbour.toString());
+//                    out.println("Neighbour");
+//                    out.print(neighbour.toString());
                     
                 }                          
             }
-            //Solve Twin Board
-            twinGame = pqTwin.delMin();
-            currBoardTwin = twinGame.thisBoard();
-            out2.println("Best Twin Neighbour with manhattan"+currBoardTwin.manhattan());
-            out2.print(currBoardTwin.toString());
-            if (currBoardTwin.isGoal()) {
-                twinSolved = true;
-                System.out.println("Twin solved at "+twinGame.numMoves+" moves");
-                numMoves = -1;
-                continue;
-            }
-            Iterable<Board> neighboursTwin = currBoardTwin.neighbors();            
-//            out2.println("Twin Neighbours");
-            for (Board neighbourTwin: neighboursTwin) {
-                if (!seenBefore(twinGame, neighbourTwin)) {       
-                    //out2.println("Never seen before?"+neverSeenBefore(twinGame, neighbourTwin));
-                    SearchNode newNodeTwin = new SearchNode(neighbourTwin, twinGame);                    
-                    pqTwin.insert(newNodeTwin);                    
-//                    out2.println("Twin neighbour");
-//                    out2.print(neighbourTwin.toString());
-                }                          
-            }
-
         }
     }
     private void createSolutionStack(SearchNode myPath)
@@ -129,6 +116,10 @@ public class Solver {
         public Board thisBoard()
         {
             return board;
+        }
+        public boolean isTwin()
+        {
+            return twin;
         }
         public int compareTo(SearchNode that) 
         {            
