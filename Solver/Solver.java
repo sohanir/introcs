@@ -1,11 +1,10 @@
-import java.util.*;
 public class Solver {
     private boolean initialSolved;
     private boolean twinSolved;
-    private Board myBoard;
+    //private Board myBoard;
     MinPQ<SearchNode> pq;
     MinPQ<SearchNode> pqTwin;
-    Queue<Board> solutionQueue;
+    Stack<Board> solutionStack;
     int numMoves;
     // find a solution to the initial board (using the A* algorithm)
     public Solver(Board initial)  
@@ -14,9 +13,9 @@ public class Solver {
         Out out2 = new Out("test_twin.txt");
         pq = new MinPQ<SearchNode>();
         pqTwin = new MinPQ<SearchNode>();
-        this.myBoard = initial;
+        //this.myBoard = initial;
         SearchNode initGame = new SearchNode(initial, null);        
-        solutionQueue = new Queue<Board>();
+        solutionStack = new Stack<Board>();
         pq.insert(initGame);
         //Board currBoard = initial;
         Board currBoardTwin = initial.twin();
@@ -27,13 +26,16 @@ public class Solver {
             Board currBoard = initGame.thisBoard();
             out.println("Best neighbour");
             out.print(currBoard.toString());
+            //System.out.print("Best neighbour:\n"+currBoard.toString());
+                               
             if (currBoard.isGoal()) {
                 initialSolved = true;
-            }
-            solutionQueue.enqueue(currBoard);
+                numMoves = initGame.numMoves();
+                createSolutionStack(initGame);
+                continue;
+            } 
             //Solve original board
             Iterable<Board> neighbours = currBoard.neighbors();            
-            Board searchBoard;
             out.println("Add neighbours");
             for (Board neighbour: neighbours) {
                 if (!seenBefore(initGame, neighbour)) {                    
@@ -47,41 +49,54 @@ public class Solver {
             //Solve Twin Board
             twinGame = pqTwin.delMin();
             currBoardTwin = twinGame.thisBoard();
-            out2.println("Best Twin Neighbour");
+            out2.println("Best Twin Neighbour with manhattan"+currBoardTwin.manhattan());
             out2.print(currBoardTwin.toString());
             if (currBoardTwin.isGoal()) {
                 twinSolved = true;
+                System.out.println("Twin solved at "+twinGame.numMoves+" moves");
+                numMoves = -1;
+                continue;
             }
             Iterable<Board> neighboursTwin = currBoardTwin.neighbors();            
-            out2.println("Twin Neighbours");
+//            out2.println("Twin Neighbours");
             for (Board neighbourTwin: neighboursTwin) {
                 if (!seenBefore(twinGame, neighbourTwin)) {       
                     //out2.println("Never seen before?"+neverSeenBefore(twinGame, neighbourTwin));
                     SearchNode newNodeTwin = new SearchNode(neighbourTwin, twinGame);                    
                     pqTwin.insert(newNodeTwin);                    
-                    out2.println("Twin neighbour");
-                    out2.print(neighbourTwin.toString());
+//                    out2.println("Twin neighbour");
+//                    out2.print(neighbourTwin.toString());
                 }                          
             }
 
         }
-        if (twinSolved) {
-            System.out.println("Twin solved at "+twinGame.numMoves+" moves");
-            numMoves = -1;
-        } else {
-            numMoves = initGame.numMoves();
+    }
+    private void createSolutionStack(SearchNode myPath)
+    {
+        while (myPath != null)
+        {
+            Board myPathBoard = myPath.thisBoard();
+            solutionStack.push(myPathBoard);
+            myPath = myPath.previous;
         }
     }
     private static boolean seenBefore(SearchNode current, Board newBoard) 
     {        
         SearchNode parentNode = current.previous;
-        while (parentNode != null) {
-            
+//        while (parentNode != null) {
+//            if (newBoard.equals(parentNode.thisBoard())) {
+//                return true;
+//            }
+//            parentNode = parentNode.previous;
+//        }             
+//        return false;
+        if (parentNode == null) {
+            return false;
+        } else {
             if (newBoard.equals(parentNode.thisBoard())) {
                 return true;
             }
-            parentNode = parentNode.previous;
-        }             
+        }
         return false;
     }
     private class SearchNode implements Comparable<SearchNode> {
@@ -89,7 +104,8 @@ public class Solver {
         private int numMoves;
         private Board board;   
         private int priority;
-        public SearchNode(Board searchBoard, SearchNode parent)
+        boolean twin;
+        public SearchNode(Board searchBoard, SearchNode parent, boolean type)
         {
             this.board = searchBoard;
             if (parent == null) {
@@ -99,7 +115,8 @@ public class Solver {
                 this.numMoves = parent.numMoves + 1;
                 this.previous = parent;
             }
-            this.priority = searchBoard.manhattan();
+            this.twin = type;
+            this.priority = searchBoard.manhattan() + numMoves;
         }
         public int numMoves()
         {
@@ -114,11 +131,11 @@ public class Solver {
             return board;
         }
         public int compareTo(SearchNode that) 
-        {
+        {            
             if (this.priority() == that.priority()) {
-                if (this.thisBoard().hamming() > that.thisBoard().hamming()) {
+                if (this.thisBoard().manhattan() > that.thisBoard().manhattan()) {
                     return 1;
-                } else if (this.thisBoard().hamming() < that.thisBoard().hamming()) {
+                } else if (this.thisBoard().manhattan() < that.thisBoard().manhattan()) {
                     return -1;
                 } else {
                     return 0;
@@ -143,7 +160,7 @@ public class Solver {
     // sequence of boards in a shortest solution; null if unsolvable
     public Iterable<Board> solution()
     {
-        return solutionQueue;
+        return solutionStack;
     }
     // solve a slider puzzle (given below)
     public static void main(String[] args) 
@@ -164,9 +181,9 @@ public class Solver {
         if (!solver.isSolvable())
             StdOut.println("No solution possible");
         else {
-            StdOut.println("Minimum number of moves = " + solver.moves());
             for (Board board : solver.solution())
                 StdOut.println(board);
+            StdOut.println("Minimum number of moves = " + solver.moves());
         }
     }
 }

@@ -7,28 +7,43 @@ public class Board {
     private int[][] block;
     private int blank_i;
     private int blank_j;    
-    private Queue<Board> boardQueue;
+    private Queue<NeighbourBlank> neighbourQueue;
+    int man;
+    int ham;
     public Board(int[][] blocks)  
     {
        this.N = blocks.length;
        this.block = new int[N][N];
-       copyBoard(blocks, block, N);
-       
+       man = 0;
+       ham = 0;
        this.goal = new int[N][N];
        for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
-                if (block[i][j] == 0) {
-                    blank_i = i;
-                    blank_j = j;
-                }
+                block[i][j] = blocks[i][j];
                 if ((i == (N-1)) && (j == N-1)) {
                     goal[i][j] = 0;
                 } else {
                     goal[i][j] = i*N+j+1;
                 }
+                if (block[i][j] == 0) {
+                    blank_i = i;
+                    blank_j = j;
+                } else {
+                    if (block[i][j] != goal[i][j]) {
+                        ham++;
+                        int right_index_i = (block[i][j])/N;
+                        int right_index_j = (block[i][j])%N - 1;
+                        if (right_index_j < 0) {
+                            right_index_i--;
+                            right_index_j = N - 1;
+                        }
+                        //System.out.println("Right index for "+block[i][j]+" is i= "+right_index_i+" and j = "+right_index_j);
+                        man += Math.abs(i - right_index_i) + Math.abs(j - right_index_j);  
+                    }
+                }
             }
         }
-        boardQueue = new Queue<Board>();
+        neighbourQueue = new Queue<NeighbourBlank>();
     }
     // board dimension N
     public int dimension() 
@@ -38,32 +53,12 @@ public class Board {
     // number of blocks out of place
     public int hamming() 
     {
-        int distance = 0;
-        for(int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                if ((block[i][j] != 0) 
-                        && (block[i][j] != goal[i][j])) {                    
-                    distance++;
-                }
-            }
-        }
-        return distance;
+        return ham;
     }
     // sum of Manhattan distances between blocks and goal
     public int manhattan()  
     {
-        int distance = 0;
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                if ((block[i][j] != 0) 
-                    && (block[i][j] != goal[i][j])) {
-                    int right_index_i = block[i][j]/N;
-                    int right_index_j = block[i][j]%N - 1;                    
-                    distance = distance + Math.abs(i - right_index_i) + Math.abs(j - right_index_j);                    
-                }
-            }
-        }
-        return distance;
+        return man;
     }
     // is this board the goal board?
     public boolean isGoal() 
@@ -110,7 +105,6 @@ public class Board {
             {-1, 0}
         };
         int maxNeighbours = 4;
-        int[][] neighbourBoard = new int[N][N];  
         int neighbourI = 0;
         int neighbourJ = 0; 
         for(int currNeighbour = maxNeighbours-1; currNeighbour >= 0; currNeighbour--) {
@@ -119,10 +113,7 @@ public class Board {
             //System.out.println("Neighbour I and J "+neighbourI+" and " +neighbourJ);
             if ((neighbourI >= 0) && (neighbourI < N) &&
                 (neighbourJ >= 0) && (neighbourJ < N)) { 
-                copyBoard(block, neighbourBoard, N);
-                neighbourBoard[blank_i][blank_j] = neighbourBoard[neighbourI][neighbourJ];
-                neighbourBoard[neighbourI][neighbourJ] = 0;                    
-                boardQueue.enqueue(new Board(neighbourBoard));                   
+                neighbourQueue.enqueue(new NeighbourBlank(neighbourI, neighbourJ));               
             }
         }          
     }
@@ -134,12 +125,21 @@ public class Board {
             }
         }
     }
-    public Iterable<Board> neighbors()
+    private class NeighbourBlank {
+        int myI;
+        int myJ;
+        public NeighbourBlank(int i, int j)
+        {
+            myI = i;
+            myJ = j;            
+        }
+    }
+    /*public Iterable<Board> neighbors()
     {
         buildNeighbourList();      
         return boardQueue;
     } 
-    /*
+    */
     // all neighboring boards
     public Iterable<Board> neighbors()
     {
@@ -152,49 +152,45 @@ public class Board {
             }
         };        
     }    
-    private class BoardIterator implements Iterator<Board> {
-        private Board[] boardQueue = new Board[4];
-        int numNeighbours = 0;
+    private void swap(int i, int j, int k, int l)
+    {
+        int temp = block[i][j];
+        block[i][j] = block[k][l];
+        block[k][l] = temp;
+    }
+    private class BoardIterator implements Iterator<Board> {       
+        private int myBlankI, myBlankJ;
         public BoardIterator() 
         {
-            int[][] neighbourList = {
-                {1, 0},
-                {0, 1},
-                {0, -1},
-                {-1, 0}
-            };
-            int maxNeighbours = 4;
-            int[][] neighbourBoard = new int[N][N];  
-            boolean[] neighboursValid = new boolean[maxNeighbours];
-            int neighbourI = 0;
-            int neighbourJ = 0; 
-            for(int currNeighbour = maxNeighbours-1; currNeighbour >= 0; currNeighbour--) {
-                neighbourI = blank_i + neighbourList[currNeighbour][0];
-                neighbourJ = blank_j + neighbourList[currNeighbour][1];
-                //System.out.println("Neighbour I and J "+neighbourI+" and " +neighbourJ);
-                if ((neighbourI >= 0) && (neighbourI < N) &&
-                    (neighbourJ >= 0) && (neighbourJ < N)) { 
-                    copyBoard(block, neighbourBoard, N);
-                    neighbourBoard[blank_i][blank_j] = neighbourBoard[neighbourI][neighbourJ];
-                    neighbourBoard[neighbourI][neighbourJ] = 0;                    
-                    boardQueue[numNeighbours++] = new Board(neighbourBoard);                   
-                }
-            }                   
+            buildNeighbourList();   
+            myBlankI = blank_i;
+            myBlankJ = blank_j;
         }
         public boolean hasNext() 
         {
-            return numNeighbours > 0;
+                swap(myBlankI, myBlankJ, blank_i, blank_j);
+                myBlankI = blank_i;
+                myBlankJ = blank_j;
+            if (!neighbourQueue.isEmpty()) {
+
+                return true;
+            } else {
+                return false;
+            }
         }
         public Board next() 
         {
-             return boardQueue[--numNeighbours];
-             
+             NeighbourBlank nextNeighbour = neighbourQueue.dequeue();
+             swap(nextNeighbour.myI, nextNeighbour.myJ, myBlankI,  myBlankJ);
+             myBlankI = nextNeighbour.myI;
+             myBlankJ = nextNeighbour.myJ;
+             return(new Board(block));
         }
         public void remove() 
         {
             //Unsupported
         }        
-    }*/
+    }
     // string representation of this board (in the output format specified below)
     public String toString()   
     {
@@ -240,5 +236,6 @@ public class Board {
             System.out.println("Next neighbour");
             System.out.print(iter.next().toString());
         }
+        System.out.print("Original Board\n"+myBoard.toString());
     }
 }
