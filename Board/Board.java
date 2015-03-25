@@ -3,42 +3,87 @@ public class Board {
     // construct a board from an N-by-N array of blocks
     // (where blocks[i][j] = block in row i, column j)
     private final int N;
-    private int[][] goal;
-    private int[][] block;
-    private int blank_i;
-    private int blank_j;    
+    private short[][] goal;
+    private short[][] block;
+    private int blankI;
+    private int blankJ;    
     private Queue<NeighbourBlank> neighbourQueue;
-    int man;
-    int ham;
+    private int man;
+    private int ham;
     public Board(int[][] blocks)  
     {
+        if (blocks == null) {
+            throw new java.lang.NullPointerException("No input");
+        }
        this.N = blocks.length;
-       this.block = new int[N][N];
+       this.block = new short[N][N];
        man = 0;
        ham = 0;
-       this.goal = new int[N][N];
+       this.goal = new short[N][N];
+       for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                block[i][j] = (short) blocks[i][j];
+                if ((i == (N-1)) && (j == N-1)) {
+                    goal[i][j] = 0;
+                } else {
+                    goal[i][j] = (short)(i*N + j + 1);
+                }
+                if (block[i][j] == 0) {
+                    blankI = i;
+                    blankJ = j;
+                } else {
+                    if (block[i][j] != goal[i][j]){
+                        ham++;
+                        int rightIndexI = (block[i][j]) / N;
+                        int rightIndexJ = (block[i][j]) % N - 1;
+                        if (rightIndexJ < 0) {
+                            rightIndexI--;
+                            rightIndexJ = N - 1;
+                        }
+                        //System.out.println("Right index for "+
+                        //block[i][j]+" is i= "+rightIndexI+" and j = "+rightIndexJ);
+                        man += Math.abs(i - rightIndexI) 
+                                   + Math.abs(j - rightIndexJ);  
+                    }
+                }
+            }
+        }
+        neighbourQueue = new Queue<NeighbourBlank>();
+    }
+    private Board(short[][] blocks)  
+    {
+        if (blocks == null) {
+            throw new java.lang.NullPointerException("No input");
+        }
+       this.N = blocks.length;
+       this.block = new short[N][N];
+       man = 0;
+       ham = 0;
+       this.goal = new short[N][N];
        for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
                 block[i][j] = blocks[i][j];
                 if ((i == (N-1)) && (j == N-1)) {
                     goal[i][j] = 0;
                 } else {
-                    goal[i][j] = i*N+j+1;
+                    goal[i][j] = (short) (i*N + j + 1);
                 }
                 if (block[i][j] == 0) {
-                    blank_i = i;
-                    blank_j = j;
+                    blankI = i;
+                    blankJ = j;
                 } else {
                     if (block[i][j] != goal[i][j]) {
                         ham++;
-                        int right_index_i = (block[i][j])/N;
-                        int right_index_j = (block[i][j])%N - 1;
-                        if (right_index_j < 0) {
-                            right_index_i--;
-                            right_index_j = N - 1;
+                        int rightIndexI = (block[i][j]) / N;
+                        int rightIndexJ = (block[i][j]) % N - 1;
+                        if (rightIndexJ < 0) {
+                            rightIndexI--;
+                            rightIndexJ = N - 1;
                         }
-                        //System.out.println("Right index for "+block[i][j]+" is i= "+right_index_i+" and j = "+right_index_j);
-                        man += Math.abs(i - right_index_i) + Math.abs(j - right_index_j);  
+                        //System.out.println("Right index for "+
+                        //block[i][j]+" is i= "+rightIndexI+" and j = "+rightIndexJ);
+                        man += Math.abs(i - rightIndexI) 
+                                   + Math.abs(j - rightIndexJ);  
                     }
                 }
             }
@@ -68,15 +113,15 @@ public class Board {
     // a boadr that is obtained by exchanging two adjacent blocks in the same row
     public Board twin()   
     {
-        int[][] twinBoard = new int[N][N];
+        short[][] twinBoard = new short[N][N];
         copyBoard(block, twinBoard, N);      
         int i = 0;        
         boolean swapDone = false;
         while ((i < N) && (!swapDone)) {
-            if (i == blank_i) {
+            if (i == blankI) {
                 i++;
             }
-            int item = twinBoard[i][0];
+            short item = twinBoard[i][0];
             twinBoard[i][0] = twinBoard[i][1];
             twinBoard[i][1] = item;
             swapDone = true;
@@ -86,7 +131,10 @@ public class Board {
     // does this board equal y?
     public boolean equals(Object y)  
     {
+        if (y == null) return false;
+        if (this.getClass() != y.getClass()) return false;        
         Board that = (Board) y;       
+        if (that.dimension() != N) return false;
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
                 if (block[i][j] != that.block[i][j]) {
@@ -107,17 +155,19 @@ public class Board {
         int maxNeighbours = 4;
         int neighbourI = 0;
         int neighbourJ = 0; 
-        for(int currNeighbour = maxNeighbours-1; currNeighbour >= 0; currNeighbour--) {
-            neighbourI = blank_i + neighbourList[currNeighbour][0];
-            neighbourJ = blank_j + neighbourList[currNeighbour][1];
-            //System.out.println("Neighbour I and J "+neighbourI+" and " +neighbourJ);
-            if ((neighbourI >= 0) && (neighbourI < N) &&
-                (neighbourJ >= 0) && (neighbourJ < N)) { 
-                neighbourQueue.enqueue(new NeighbourBlank(neighbourI, neighbourJ));               
+        for (int curr = maxNeighbours-1; curr >= 0; curr--) {
+            neighbourI = blankI + neighbourList[curr][0];
+            neighbourJ = blankJ + neighbourList[curr][1];
+            //System.out.println("Neighbour I and 
+            //J "+neighbourI+" and " +neighbourJ);
+            if ((neighbourI >= 0) && (neighbourI < N) 
+                && (neighbourJ >= 0) && (neighbourJ < N)) { 
+                neighbourQueue.enqueue(new 
+                    NeighbourBlank(neighbourI, neighbourJ));               
             }
         }          
     }
-    private static void copyBoard(int[][] from, int[][] to, int size)
+    private static void copyBoard(short[][] from, short[][] to, int size)
     {
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
@@ -126,8 +176,8 @@ public class Board {
         }
     }
     private class NeighbourBlank {
-        int myI;
-        int myJ;
+        private int myI;
+        private int myJ;
         public NeighbourBlank(int i, int j)
         {
             myI = i;
@@ -148,13 +198,13 @@ public class Board {
             @Override
             public Iterator<Board> iterator()
             {
-                return new BoardIterator() ;
+                return new BoardIterator();
             }
         };        
     }    
     private void swap(int i, int j, int k, int l)
     {
-        int temp = block[i][j];
+        short temp = block[i][j];
         block[i][j] = block[k][l];
         block[k][l] = temp;
     }
@@ -163,20 +213,15 @@ public class Board {
         public BoardIterator() 
         {
             buildNeighbourList();   
-            myBlankI = blank_i;
-            myBlankJ = blank_j;
+            myBlankI = blankI;
+            myBlankJ = blankJ;
         }
         public boolean hasNext() 
         {
-                swap(myBlankI, myBlankJ, blank_i, blank_j);
-                myBlankI = blank_i;
-                myBlankJ = blank_j;
-            if (!neighbourQueue.isEmpty()) {
-
-                return true;
-            } else {
-                return false;
-            }
+                swap(myBlankI, myBlankJ, blankI, blankJ);
+                myBlankI = blankI;
+                myBlankJ = blankJ;
+                return (!neighbourQueue.isEmpty());
         }
         public Board next() 
         {
@@ -184,7 +229,7 @@ public class Board {
              swap(nextNeighbour.myI, nextNeighbour.myJ, myBlankI,  myBlankJ);
              myBlankI = nextNeighbour.myI;
              myBlankJ = nextNeighbour.myJ;
-             return(new Board(block));
+             return (new Board(block));
         }
         public void remove() 
         {
@@ -195,6 +240,7 @@ public class Board {
     public String toString()   
     {
         String s = "";
+        s += N + "\n";
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
                 s = s + block[i][j]+" ";                
@@ -209,9 +255,10 @@ public class Board {
         In in = new In(args[0]); 
         int N = in.readInt();
         int[][] inBoard = new int[N][N];  
-        int i = 0; int j = 0;
+        int i = 0; 
+        int j = 0;
         while (!in.isEmpty()) {
-            inBoard[i][j]= in.readInt();
+            inBoard[i][j] = in.readInt();
             j++;
             if (j >= N) {
                 i++;
@@ -232,7 +279,7 @@ public class Board {
         System.out.println("Neighbours");        
         Iterable<Board> myNeighbours = myBoard.neighbors();
         Iterator<Board> iter = myNeighbours.iterator();
-        while(iter.hasNext()) {
+        while (iter.hasNext()) {
             System.out.println("Next neighbour");
             System.out.print(iter.next().toString());
         }

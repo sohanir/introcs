@@ -2,16 +2,17 @@ public class Solver {
     private boolean initialSolved;
     private boolean twinSolved;
     //private Board myBoard;
-    MinPQ<SearchNode> pq;
-    MinPQ<SearchNode> pqTwin;
-    Stack<Board> solutionStack;
-    int numMoves;
+    private MinPQ<SearchNode> pq;
+    private Stack<Board> solutionStack;
+    private int numMoves;
     // find a solution to the initial board (using the A* algorithm)
     public Solver(Board initial)  
     {
 //        Out out = new Out("test.txt");
-        pq = new MinPQ<SearchNode>();
-        pqTwin = new MinPQ<SearchNode>();
+        if (initial == null) {
+            throw new java.lang.NullPointerException("No input");
+        }
+        pq = new MinPQ<SearchNode>();        
         //this.myBoard = initial;
         SearchNode initGame = new SearchNode(initial, null, false);        
         solutionStack = new Stack<Board>();
@@ -30,8 +31,10 @@ public class Solver {
             if (currBoard.isGoal()) {
                 if (initGame.isTwin()) {
                     twinSolved = true;
-                    System.out.println("Twin solved at "+initGame.numMoves+" moves");
+                    //System.out.println("Twin solved at
+                    //"+initGame.numMoves+" moves");
                     numMoves = -1;
+                    solutionStack = null;
                 } else {
                     initialSolved = true;
                     numMoves = initGame.numMoves();
@@ -60,11 +63,12 @@ public class Solver {
     }
     private void createSolutionStack(SearchNode myPath)
     {
-        while (myPath != null)
+        SearchNode thisNode = myPath;
+        while (thisNode != null)
         {
-            Board myPathBoard = myPath.thisBoard();
+            Board myPathBoard = thisNode.thisBoard();
             solutionStack.push(myPathBoard);
-            myPath = myPath.previous;
+            thisNode = thisNode.previous;
         }
     }
     private static boolean seenBefore(SearchNode current, Board newBoard) 
@@ -91,7 +95,7 @@ public class Solver {
         private int numMoves;
         private Board board;   
         private int priority;
-        boolean twin;
+        private boolean twin;
         public SearchNode(Board searchBoard, SearchNode parent, boolean type)
         {
             this.board = searchBoard;
@@ -126,7 +130,8 @@ public class Solver {
             if (this.priority() == that.priority()) {
                 if (this.thisBoard().manhattan() > that.thisBoard().manhattan()) {
                     return 1;
-                } else if (this.thisBoard().manhattan() < that.thisBoard().manhattan()) {
+                } else if (this.thisBoard().manhattan() 
+                               < that.thisBoard().manhattan()) {
                     return -1;
                 } else {
                     return 0;
@@ -169,12 +174,12 @@ public class Solver {
         Solver solver = new Solver(initial);
         
         // print solution to standard output
-        if (!solver.isSolvable())
+        if (!solver.isSolvable()) {
             StdOut.println("No solution possible");
-        else {
-            for (Board board : solver.solution())
-                StdOut.println(board);
+        } else {
             StdOut.println("Minimum number of moves = " + solver.moves());
+            for (Board board : solver.solution())
+                StdOut.println(board);            
         }
     }
 }
