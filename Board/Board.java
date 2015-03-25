@@ -3,7 +3,6 @@ public class Board {
     // construct a board from an N-by-N array of blocks
     // (where blocks[i][j] = block in row i, column j)
     private final int N;
-    private short[][] goal;
     private short[][] block;
     private int blankI;
     private int blankJ;    
@@ -19,20 +18,20 @@ public class Board {
        this.block = new short[N][N];
        man = 0;
        ham = 0;
-       this.goal = new short[N][N];
        for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
                 block[i][j] = (short) blocks[i][j];
+                short goal;
                 if ((i == (N-1)) && (j == N-1)) {
-                    goal[i][j] = 0;
+                    goal = 0;
                 } else {
-                    goal[i][j] = (short)(i*N + j + 1);
+                    goal = (short)(i*N + j + 1);
                 }
                 if (block[i][j] == 0) {
                     blankI = i;
                     blankJ = j;
                 } else {
-                    if (block[i][j] != goal[i][j]){
+                    if (block[i][j] != goal){
                         ham++;
                         int rightIndexI = (block[i][j]) / N;
                         int rightIndexJ = (block[i][j]) % N - 1;
@@ -59,20 +58,20 @@ public class Board {
        this.block = new short[N][N];
        man = 0;
        ham = 0;
-       this.goal = new short[N][N];
        for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
                 block[i][j] = blocks[i][j];
+                short goal;
                 if ((i == (N-1)) && (j == N-1)) {
-                    goal[i][j] = 0;
+                    goal = 0;
                 } else {
-                    goal[i][j] = (short) (i*N + j + 1);
+                    goal = (short) (i*N + j + 1);
                 }
                 if (block[i][j] == 0) {
                     blankI = i;
                     blankJ = j;
                 } else {
-                    if (block[i][j] != goal[i][j]) {
+                    if (block[i][j] != goal) {
                         ham++;
                         int rightIndexI = (block[i][j]) / N;
                         int rightIndexJ = (block[i][j]) % N - 1;
