@@ -3,11 +3,21 @@ public class KdTree {
    private int size;
    private Node root;
    private static final boolean EVEN = true;
+   private Champ nearestPoint;
    public KdTree()    
    {
        this.size = 0;     
        this.root = null;
    }
+   private static class Champ {
+       private Point2D treePoint;
+       private double distance;
+       public Champ(Point2D x, double y)
+       {
+           this.treePoint = x;
+           this.distance = y;
+       }
+   }           
    private static class Node {
        private final Point2D p;
        private RectHV rect;
@@ -199,30 +209,30 @@ public class KdTree {
        //System.out.println("Number of points in rectange"+pointQueue.size());
        return pointQueue;
    }
-   private Point2D closest(Node root1, Point2D p, Point2D best)
+   private void closest(Node root1, Point2D p)
    {       
-       if (root1 == null) return best;       
-       double shortestDistance = p.distanceSquaredTo(best);
-       if (shortestDistance < root1.rect.distanceSquaredTo(p)) 
-           return best;
-       Point2D champion = best;
+       if (root1 == null) return;       
+       if (nearestPoint.distance < root1.rect.distanceSquaredTo(p)) 
+           return;       
        //System.out.println("Node inspected"+root1.p.toString());
-       if (root1.p.distanceSquaredTo(p) < shortestDistance) {
-           champion = root1.p;
+       double thisNodeDistance = root1.p.distanceSquaredTo(p);
+       if (thisNodeDistance < nearestPoint.distance) {
+           nearestPoint.treePoint = root1.p;
+           nearestPoint.distance = thisNodeDistance;
        }   
-       champion = closest(root1.right, p, champion);
-       champion = closest(root1.left, p, champion);
-       return champion;
+       closest(root1.right, p);
+       closest(root1.left, p);
    }
     // a nearest neighbor in the set to point p; null if the set is empty 
    public Point2D nearest(Point2D p)    
    {
-       if (p == null) throw new java.lang.NullPointerException("No input");
-       Point2D champion = null;
+       if (p == null) throw new java.lang.NullPointerException("No input");       
        if (root != null) {
-           champion = closest(root, p, root.p);
+           nearestPoint = new Champ(root.p, p.distanceSquaredTo(root.p));
+           closest(root, p);
+           return nearestPoint.treePoint;
        }
-       return champion;
+       return null;
    }
    // unit testing of the methods (optional) 
    public static void main(String[] args)     
