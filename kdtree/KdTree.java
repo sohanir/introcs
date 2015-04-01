@@ -209,7 +209,23 @@ public class KdTree {
        //System.out.println("Number of points in rectange"+pointQueue.size());
        return pointQueue;
    }
-   private void closest(Node root1, Point2D p)
+   private boolean goLeftFirst(Node root1, Point2D p, boolean level)
+   {
+       if (level == EVEN) {
+           if (p.x() < root1.p.x()) {
+               return true;
+           } else {
+               return false;
+           }
+       } else {
+           if (p.y() < root1.p.y()) {
+               return true;
+           } else {
+               return false;
+           }
+       }
+   }
+   private void closest(Node root1, Point2D p, boolean level)
    {       
        if (root1 == null) return;       
        if (nearestPoint.distance < root1.rect.distanceSquaredTo(p)) 
@@ -220,8 +236,13 @@ public class KdTree {
            nearestPoint.treePoint = root1.p;
            nearestPoint.distance = thisNodeDistance;
        }   
-       closest(root1.right, p);
-       closest(root1.left, p);
+       if (goLeftFirst(root1, p, level)) {
+           closest(root1.left, p, !level);
+           closest(root1.right, p, !level);
+       } else {
+           closest(root1.right, p, !level);
+           closest(root1.left, p, !level);
+       }       
    }
     // a nearest neighbor in the set to point p; null if the set is empty 
    public Point2D nearest(Point2D p)    
@@ -229,7 +250,7 @@ public class KdTree {
        if (p == null) throw new java.lang.NullPointerException("No input");       
        if (root != null) {
            nearestPoint = new Champ(root.p, p.distanceSquaredTo(root.p));
-           closest(root, p);
+           closest(root, p, EVEN);
            return nearestPoint.treePoint;
        }
        return null;
